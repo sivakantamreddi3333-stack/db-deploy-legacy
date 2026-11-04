@@ -12,10 +12,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "workflows/**"
-
-  workflow_dispatch:
 
 env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
