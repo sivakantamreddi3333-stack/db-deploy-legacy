@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Databricks
+.databricks/
+
+# OS
+.DS_Store

@@ -1,0 +1,40 @@
+# GitHub Action 1: deploy CODE to the Databricks Git folder.
+# Runs on every push to main that changes files under notebooks/.
+# It calls `databricks repos update`, which pulls the latest commit
+# from GitHub into the workspace Git folder (Repos) that mirrors this repo.
+
+name: Deploy code to Databricks Git folder
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "notebooks/**"
+  workflow_dispatch:
+
+env:
+  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+  # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
+  GIT_FOLDER_PATH: /Repos/sivaashok111@outlook.com/db-deploy-legacy
+  GIT_BRANCH: main
+
+jobs:
+  deploy-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Show notebook changes in this push
+        run: |
+          echo "Notebook files changed in this push:"
+          git diff --name-only HEAD~1 HEAD -- notebooks/ 2>/dev/null || echo "(first commit)"
+
+      - name: Pull latest code into the Databricks Git folder
+        run: |
+          echo "Syncing branch '$GIT_BRANCH' into Git folder '$GIT_FOLDER_PATH'"
+          databricks repos update --path "$GIT_FOLDER_PATH" --branch "$GIT_BRANCH"
