@@ -1,6 +1,6 @@
 {
   "name": "legacy-hello-job",
-  "description": "Sample job deployed by GitHub Actions (legacy deployment, no DABs). Runs a notebook task from the Databricks Git folder.",
+  "description": "Sample job deployed by GitHub Actions (legacy deployment, no DABs).",
   "tags": {
     "managed_by": "github-actions",
     "repo": "db-deploy-legacy"
@@ -9,9 +9,10 @@
     {
       "task_key": "hello_task",
       "notebook_task": {
-        "notebook_path": "__GIT_FOLDER_PATH__/notebooks/hello_job_notebook",
-        "source": "WORKSPACE"
+        "notebook_path": "/Workspace/Repos/legacy/db-deploy-legacy/notebooks/hello_job_notebook.py",
+        "source": "GIT"
       }
     }
-  ]
+  ],
+  "max_concurrent_runs": 1
 }
