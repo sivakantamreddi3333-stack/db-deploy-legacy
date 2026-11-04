@@ -1,13 +1,13 @@
 
-name: Deploy Code to Databricks Git Folder
+name: Deploy Databricks Job
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'notebooks/**'
-      - '.github/workflows/deploy-code.yml'
+      - 'workflows/**'
+      - '.github/workflows/deploy-job.yml'
 
   workflow_dispatch:
 
@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  deploy-code:
-    name: Sync Databricks Git Folder
+  deploy-job:
+    name: Create or Update Databricks Job
     runs-on: ubuntu-latest
 
     steps:
@@ -26,25 +26,50 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Configure Databricks authentication
+      - name: Validate job definition
+        run: |
+          jq -e '.name and .tasks' workflows/job.json > /dev/null
+
+      - name: Create or Update Databricks Job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "Databricks authentication configured"
+          JOB_NAME=$(jq -r '.name' workflows/job.json)
 
-      - name: Update Databricks Git folder
-        env:
-          REPO_ID: ${{ secrets.DATABRICKS_REPO_ID }}
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          if [ -z "$REPO_ID" ]; then
-            echo "DATABRICKS_REPO_ID secret is missing"
-            exit 1
+          echo "Checking job: $JOB_NAME"
+
+          RESPONSE=$(curl -sS \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            "$DATABRICKS_HOST/api/2.1/jobs/list?limit=100")
+
+          JOB_ID=$(echo "$RESPONSE" | jq -r \
+            --arg name "$JOB_NAME" \
+            '[.jobs[]? | select(.settings.name == $name)] |
+            first | .job_id // empty')
+
+          if [ -n "$JOB_ID" ]; then
+            echo "Existing job found: $JOB_ID"
+            jq -n \
+              --argjson job_id "$JOB_ID" \
+              --slurpfile settings workflows/job.json \
+              '{job_id: $job_id, new_settings: $settings[0]}' \
+              > /tmp/reset-job.json
+
+            curl --fail-with-body -sS -X POST \
+              "$DATABRICKS_HOST/api/2.1/jobs/reset" \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data @/tmp/reset-job.json
+          else
+            echo "Job does not exist. Creating: $JOB_NAME"
+
+            curl --fail-with-body -sS -X POST \
+              "$DATABRICKS_HOST/api/2.1/jobs/create" \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data @workflows/job.json
           fi
 
-          databricks repos update "$REPO_ID" \
-            --branch "$BRANCH"
-
       - name: Deployment completed
-        run: echo "Code deployment completed successfully"
+        run: echo "Job deployment completed successfully"
