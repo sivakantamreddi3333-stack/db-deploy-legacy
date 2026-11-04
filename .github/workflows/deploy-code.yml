@@ -5,17 +5,20 @@ on:
     branches:
       - main
 
-env:
-  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
-  # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
-  GIT_FOLDER_PATH: /Workspace/legacy
-  GIT_BRANCH: main
 
 jobs:
   deploy-code:
     runs-on: ubuntu-latest
+    
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    
+      # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
+      GIT_FOLDER_PATH: /Workspace/legacy
+      GIT_BRANCH: main
+
 
     steps:
       - name: Checkout repository
@@ -26,10 +29,10 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Show notebook changes in this push
-        run: |
-          echo "Notebook files changed in this push:"
-          git diff --name-only HEAD~1 HEAD -- notebooks/ 2>/dev/null || echo "(first commit)"
+      # - name: Show notebook changes in this push
+      #   run: |
+      #     echo "Notebook files changed in this push:"
+      #     git diff --name-only HEAD~1 HEAD -- notebooks/ 2>/dev/null || echo "(first commit)"
 
       - name: Pull latest code into the Databricks Git folder
         run: |
