@@ -10,7 +10,7 @@
       "task_key": "hello_task",
       "notebook_task": {
         "notebook_path": "/Workspace/Repos/legacy/db-deploy-legacy/notebooks/hello_job_notebook.py",
-        "source": "GIT"
+        "source": "WORKSPACE"
       }
     }
   ],
