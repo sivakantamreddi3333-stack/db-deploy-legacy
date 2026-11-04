@@ -75,17 +75,27 @@ jobs:
 
             else
 
-              echo "Job does not exist. Creating..."
-
-              # Create new job
-              curl -fsS -X POST \
+              echo "Creating job: $JOB_NAME"
+              
+              HTTP_CODE=$(curl -sS -o /tmp/create-response.json \
+                -w "%{http_code}" \
+                -X POST \
                 -H "Authorization: Bearer $DATABRICKS_TOKEN" \
                 -H "Content-Type: application/json" \
                 --data @"$JOB_FILE" \
-                "$DATABRICKS_HOST/api/2.1/jobs/create"
-
-              echo "Created: $JOB_NAME"
-
+                "$DATABRICKS_HOST/api/2.1/jobs/create")
+              
+              echo "HTTP Status: $HTTP_CODE"
+              echo "Databricks Response:"
+              
+              jq '.' /tmp/create-response.json 2>/dev/null || cat /tmp/create-response.json
+              
+              if [[ "$HTTP_CODE" -lt 200 || "$HTTP_CODE" -ge 300 ]]; then
+                  echo "::error::Job creation failed for $JOB_NAME (HTTP $HTTP_CODE)"
+                  exit 1
+              fi
+              
+              echo "Successfully created job: $JOB_NAME"
             fi
 
           done
