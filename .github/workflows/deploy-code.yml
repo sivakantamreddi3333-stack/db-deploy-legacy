@@ -1,40 +1,50 @@
-name: Deploy code to Databricks Git folder
+
+name: Deploy Code to Databricks Git Folder
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'notebooks/**'
+      - '.github/workflows/deploy-code.yml'
 
+  workflow_dispatch:
 
+permissions:
+  contents: read
 
 jobs:
   deploy-code:
+    name: Sync Databricks Git Folder
     runs-on: ubuntu-latest
-    
-    env:
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-    
-      # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
-      GIT_FOLDER_PATH: /Workspace/Repos/legacy
-      GIT_BRANCH: main
-
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      # - name: Show notebook changes in this push
-      #   run: |
-      #     echo "Notebook files changed in this push:"
-      #     git diff --name-only HEAD~1 HEAD -- notebooks/ 2>/dev/null || echo "(first commit)"
-
-      - name: Pull latest code into the Databricks Git folder
+      - name: Configure Databricks authentication
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "Syncing branch '$GIT_BRANCH' into Git folder '$GIT_FOLDER_PATH'"
-          databricks repos update --path '$GIT_FOLDER_PATH' --branch '$GIT_BRANCH'
+          echo "Databricks authentication configured"
+
+      - name: Update Databricks Git folder
+        env:
+          REPO_ID: ${{ secrets.DATABRICKS_REPO_ID }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ -z "$REPO_ID" ]; then
+            echo "DATABRICKS_REPO_ID secret is missing"
+            exit 1
+          fi
+
+          databricks repos update "$REPO_ID" \
+            --branch "$BRANCH"
+
+      - name: Deployment completed
+        run: echo "Code deployment completed successfully"
