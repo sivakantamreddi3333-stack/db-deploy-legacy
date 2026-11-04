@@ -16,7 +16,7 @@ jobs:
       DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
     
       # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
-      GIT_FOLDER_PATH: /Workspace/legacy
+      GIT_FOLDER_PATH: /Workspace/Repos/legacy
       GIT_BRANCH: main
 
 
