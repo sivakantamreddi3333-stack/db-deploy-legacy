@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "notebooks/**"
-
-  workflow_dispatch:
 
 env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
@@ -38,6 +34,4 @@ jobs:
       - name: Pull latest code into the Databricks Git folder
         run: |
           echo "Syncing branch '$GIT_BRANCH' into Git folder '$GIT_FOLDER_PATH'"
-          databricks repos update \
-            --path "$GIT_FOLDER_PATH" \
-            --branch "$GIT_BRANCH"
+          databricks repos update --path '$GIT_FOLDER_PATH' --branch '$GIT_BRANCH'
