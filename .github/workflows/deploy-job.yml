@@ -17,7 +17,7 @@ env:
   DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
   DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
   # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
-  GIT_FOLDER_PATH: /Repos/sivaashok111@outlook.com/db-deploy-legacy
+  GIT_FOLDER_PATH: /Workspace/legacy/db-deploy-legacy
   # Job definition file (repo-relative) and the job name inside it
   JOB_DEFINITION: workflows/legacy_hello_job.json
   JOB_NAME: legacy-hello-job
