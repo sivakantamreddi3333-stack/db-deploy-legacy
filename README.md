@@ -73,3 +73,5 @@ To add more jobs: drop another JSON file in `workflows/` following the same patt
 * Jobs are matched **by name**; renaming a job in the JSON creates a new job and orphans the old one.
 * The notebook path intentionally has **no `.py` extension** — that is how the Jobs API addresses a notebook inside a Git folder.
 * `databricks repos update` pulls from GitHub, so the GitHub push must complete first (GitHub Actions guarantees this — the action runs after the push).
+
+* 
