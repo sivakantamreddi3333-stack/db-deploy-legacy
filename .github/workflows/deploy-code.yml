@@ -35,11 +35,18 @@ jobs:
 
       - name: Update Databricks Git folder
         env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
           REPO_ID: ${{ secrets.DATABRICKS_REPO_ID }}
           BRANCH: ${{ github.ref_name }}
         run: |
           if [ -z "$REPO_ID" ]; then
             echo "DATABRICKS_REPO_ID secret is missing"
+            exit 1
+          fi
+
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "Databricks authentication secrets are missing"
             exit 1
           fi
 
