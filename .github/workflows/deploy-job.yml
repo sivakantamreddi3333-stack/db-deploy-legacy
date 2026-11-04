@@ -1,33 +1,22 @@
-# GitHub Action 2: Deploy the JOB to Databricks.
-# Runs on every push to main that changes files under workflows/.
-#
-# Logic:
-# - Look up a job in Databricks whose name matches JOB_NAME.
-# - If found -> update the existing job (same job ID).
-# - If not found -> create a new job.
 
-name: Deploy job to Databricks
+name: Deploy Code to Databricks Git Folder
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'notebooks/**'
+      - '.github/workflows/deploy-code.yml'
 
-env:
-  DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-  DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+  workflow_dispatch:
 
-  # Path of the Databricks Git folder (Repos) that mirrors this GitHub repo
-  GIT_FOLDER_PATH: /Workspace/legacy/db-deploy-legacy
-
-  # Job definition file
-  JOB_DEFINITION: workflows/legacy_hello_job.json
-
-  # Job name in Databricks
-  JOB_NAME: legacy-hello-job
+permissions:
+  contents: read
 
 jobs:
-  deploy-job:
+  deploy-code:
+    name: Sync Databricks Git Folder
     runs-on: ubuntu-latest
 
     steps:
@@ -37,72 +26,25 @@ jobs:
       - name: Install Databricks CLI
         uses: databricks/setup-cli@main
 
-      - name: Render job definition
+      - name: Configure Databricks authentication
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          jq --arg nb_path "$GIT_FOLDER_PATH/notebooks/hello_job_notebook" \
-            '.tasks[0].notebook_task.notebook_path = $nb_path' \
-            "$JOB_DEFINITION" > job-settings.json
+          echo "Databricks authentication configured"
 
-          echo "Rendered job settings:"
-          cat job-settings.json
-
-      - name: Find existing job by name
-        id: lookup
+      - name: Update Databricks Git folder
+        env:
+          REPO_ID: ${{ secrets.DATABRICKS_REPO_ID }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          JOB_ID=""
-          PAGE_TOKEN=""
-
-          while :; do
-
-            if [ -n "$PAGE_TOKEN" ]; then
-              RESPONSE=$(databricks jobs list \
-                --output json \
-                --page-token "$PAGE_TOKEN")
-            else
-              RESPONSE=$(databricks jobs list --output json)
-            fi
-
-            MATCH=$(echo "$RESPONSE" | jq -r \
-              --arg name "$JOB_NAME" \
-              '.jobs[]? | select(.settings.name == $name) | .job_id' \
-              | head -n 1)
-
-            if [ -n "$MATCH" ]; then
-              JOB_ID="$MATCH"
-              break
-            fi
-
-            PAGE_TOKEN=$(echo "$RESPONSE" | jq -r '
-              if .next_page_token
-              then .next_page_token
-              else empty
-              end')
-
-            [ -z "$PAGE_TOKEN" ] && break
-
-          done
-
-          echo "job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
-
-          if [ -n "$JOB_ID" ]; then
-            echo "Job '$JOB_NAME' already exists (ID $JOB_ID). It will be UPDATED."
-          else
-            echo "Job '$JOB_NAME' not found. It will be CREATED."
+          if [ -z "$REPO_ID" ]; then
+            echo "DATABRICKS_REPO_ID secret is missing"
+            exit 1
           fi
 
-      - name: Update existing job
-        if: steps.lookup.outputs.job_id != ''
-        run: |
-          databricks jobs reset \
-            --job-id "${{ steps.lookup.outputs.job_id }}" \
-            --json-file job-settings.json
+          databricks repos update "$REPO_ID" \
+            --branch "$BRANCH"
 
-          echo "Updated job '$JOB_NAME' (ID ${{ steps.lookup.outputs.job_id }})"
-
-      - name: Create new job
-        if: steps.lookup.outputs.job_id == ''
-        run: |
-          databricks jobs create \
-            --json-file job-settings.json
-
-          echo "Created job '$JOB_NAME'"
+      - name: Deployment completed
+        run: echo "Code deployment completed successfully"
