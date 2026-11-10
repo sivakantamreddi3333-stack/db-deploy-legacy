@@ -5,6 +5,12 @@
     "managed_by": "github-actions",
     "repo": "db-deploy-legacy"
   },
+  "trigger": {
+  "pause_status": "PAUSED",
+  "periodic": {
+    "interval": 1,
+    "unit": "DAYS"
+  },
   "tasks": [
     {
       "task_key": "hello_task",
