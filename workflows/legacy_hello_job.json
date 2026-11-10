@@ -10,7 +10,7 @@
   "periodic": {
     "interval": 1,
     "unit": "DAYS"
-  },
+  }},
   "tasks": [
     {
       "task_key": "hello_task",
